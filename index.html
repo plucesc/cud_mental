@@ -39,6 +39,7 @@ html, body, #map {
     border: 1px solid #ccc;
     border-radius: 6px;
     margin-bottom: 12px;
+    background: white;
 }
 
 .kpi {
@@ -65,6 +66,8 @@ html, body, #map {
     top: 20px;
     z-index: 1000;
     width: 520px;
+    max-height: 44vh;
+    overflow-y: auto;
     background: white;
     border-radius: 10px;
     box-shadow: 0 3px 14px rgba(0,0,0,0.25);
@@ -75,6 +78,10 @@ html, body, #map {
     margin: 0 0 8px 0;
     color: #0B3C8C;
     font-size: 15px;
+    position: sticky;
+    top: 0;
+    background: white;
+    padding-bottom: 6px;
 }
 
 #tablaComparativa {
@@ -96,6 +103,9 @@ html, body, #map {
 
 #tablaComparativa th {
     background: #f1f1f1;
+    position: sticky;
+    top: 28px;
+    z-index: 1;
 }
 
 #graficoPanel {
@@ -149,6 +159,7 @@ html, body, #map {
         left: 20px;
         top: auto;
         bottom: 360px;
+        max-height: 28vh;
     }
 
     #graficoPanel {
@@ -370,7 +381,7 @@ function reconstruirLabels() {
                         font-size:11px;
                         font-weight:bold;
                         color:#0B3C8C;
-                        background:rgba(255,255,255,0.85);
+                        background:rgba(255,255,255,0.88);
                         padding:2px 4px;
                         border-radius:4px;
                         box-shadow:0 1px 4px rgba(0,0,0,0.15);
@@ -430,24 +441,40 @@ function actualizarGrafico() {
         x: edades,
         y: valores,
         type: "scatter",
-        mode: "lines+markers",
+        mode: "lines+markers+text",
+        text: valores.map(v => v.toLocaleString('es-AR')),
+        textposition: "top center",
+        textfont: {
+            size: 10,
+            color: "#333333"
+        },
         line: {
             color: "#4F81BD",
-            width: 2
+            width: 3,
+            shape: "spline",
+            smoothing: 0.2
         },
         marker: {
             size: 10,
             color: "#5B9BD5",
             line: {
                 color: "#1F4E79",
-                width: 1
+                width: 1.5
             }
         },
         customdata: grupos,
         hovertemplate:
             "<b>%{customdata}</b><br>" +
             "Edad inicio: %{x}<br>" +
-            "Cantidad: %{y:,}<extra></extra>"
+            "Cantidad: %{y:,}<extra></extra>",
+        hoverlabel: {
+            bgcolor: "#ffffff",
+            bordercolor: "#0B3C8C",
+            font: {
+                color: "#333333",
+                size: 12
+            }
+        }
     };
 
     const layout = {
@@ -458,10 +485,11 @@ function actualizarGrafico() {
                 color: "#1F4E79"
             }
         },
+        hovermode: "closest",
         margin: {
             l: 55,
-            r: 25,
-            t: 50,
+            r: 20,
+            t: 55,
             b: 65
         },
         paper_bgcolor: "#ffffff",
@@ -518,7 +546,10 @@ actualizarTabla();
 actualizarGrafico();
 
 window.addEventListener('resize', function () {
-    Plotly.Plots.resize('graficoEdad');
+    const chartDiv = document.getElementById('graficoEdad');
+    if (chartDiv) {
+        Plotly.Plots.resize(chartDiv);
+    }
 });
 </script>
 </body>
