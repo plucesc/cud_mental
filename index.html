@@ -1,0 +1,402 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="css/leaflet.css">
+
+<style>
+html, body, #map {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+}
+
+#panel {
+    position: absolute;
+    top: 70px;
+    left: 20px;
+    z-index: 1000;
+    width: 300px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 3px 14px rgba(0,0,0,0.25);
+    padding: 14px;
+}
+
+#panel h3 {
+    margin: 0 0 10px 0;
+    color: #0B3C8C;
+    font-size: 18px;
+}
+
+#selectorMes {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    margin-bottom: 12px;
+}
+
+.kpi {
+    margin-bottom: 10px;
+    padding: 8px;
+    background: #f7f7f7;
+    border-radius: 6px;
+}
+
+.kpi .label {
+    font-size: 12px;
+    color: #555;
+}
+
+.kpi .value {
+    font-size: 16px;
+    font-weight: bold;
+    color: #0B3C8C;
+}
+
+#tablaPanel {
+    position: absolute;
+    right: 20px;
+    top: 20px;
+    z-index: 1000;
+    width: 520px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 3px 14px rgba(0,0,0,0.25);
+    padding: 10px;
+}
+
+#tablaPanel h4 {
+    margin: 0 0 8px 0;
+    color: #0B3C8C;
+    font-size: 15px;
+}
+
+#tablaComparativa {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 10px;
+}
+
+#tablaComparativa th, #tablaComparativa td {
+    border: 1px solid #ddd;
+    padding: 4px 5px;
+    text-align: right;
+}
+
+#tablaComparativa th:first-child,
+#tablaComparativa td:first-child {
+    text-align: left;
+}
+
+#tablaComparativa th {
+    background: #f1f1f1;
+}
+
+.leaflet-popup-content {
+    margin: 12px 14px;
+}
+
+.label-comuna {
+    pointer-events: none;
+}
+
+@media (max-width: 1100px) {
+    #tablaPanel {
+        width: 460px;
+    }
+}
+
+@media (max-width: 900px) {
+    #panel {
+        width: 260px;
+    }
+
+    #tablaPanel {
+        width: calc(100% - 40px);
+        right: 20px;
+        left: 20px;
+        top: auto;
+        bottom: 20px;
+    }
+}
+</style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<div id="panel">
+    <h3>CUD Mental</h3>
+
+    <select id="selectorMes">
+        <option value="Enero">Enero</option>
+        <option value="Febrero">Febrero</option>
+        <option value="Marzo" selected>Marzo</option>
+    </select>
+
+    <div class="kpi">
+        <div class="label">Total mostrado</div>
+        <div class="value" id="kpiTotal">-</div>
+    </div>
+
+    <div class="kpi">
+        <div class="label">Comuna con mayor CUD mental</div>
+        <div class="value" id="kpiMax">-</div>
+    </div>
+
+    <div class="kpi">
+        <div class="label">Comuna con menor CUD mental</div>
+        <div class="value" id="kpiMin">-</div>
+    </div>
+</div>
+
+<div id="tablaPanel">
+    <h4>Comparativa por comuna y mes</h4>
+    <table id="tablaComparativa">
+        <thead>
+            <tr>
+                <th>Comuna</th>
+                <th>Enero</th>
+                <th>Febrero</th>
+                <th>Marzo</th>
+                <th>% mes</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</div>
+
+<script src="js/leaflet.js"></script>
+<script src="data/mapa_cud_mentalcomunas_1.js"></script>
+<script>
+const datosTexto = `
+1	Enero	3847	8463
+2	Enero	2869	6694
+3	Enero	4156	8579
+4	Enero	5051	10080
+5	Enero	3584	7846
+6	Enero	3754	8392
+7	Enero	4186	9038
+8	Enero	2430	4799
+9	Enero	3747	7837
+10	Enero	3601	7866
+11	Enero	3648	8234
+12	Enero	4106	9268
+13	Enero	4529	10339
+14	Enero	3964	9307
+15	Enero	3785	8513
+1	Febrero	3888	8546
+2	Febrero	2903	6752
+3	Febrero	4209	8684
+4	Febrero	5112	10194
+5	Febrero	3629	7935
+6	Febrero	3799	8480
+7	Febrero	4237	9134
+8	Febrero	2450	4848
+9	Febrero	3798	7927
+10	Febrero	3633	7938
+11	Febrero	3686	8317
+12	Febrero	4141	9359
+13	Febrero	4561	10411
+14	Febrero	4003	9407
+15	Febrero	3813	8594
+1	Marzo	3846	8462
+2	Marzo	2869	6693
+3	Marzo	4156	8578
+4	Marzo	5051	10080
+5	Marzo	3584	7846
+6	Marzo	3753	8390
+7	Marzo	4186	9038
+8	Marzo	2430	4799
+9	Marzo	3747	7836
+10	Marzo	3600	7865
+11	Marzo	3648	8234
+12	Marzo	4106	9268
+13	Marzo	4529	10339
+14	Marzo	3964	9307
+15	Marzo	3785	8513
+`.trim();
+
+function parsearDatos(texto) {
+    return texto
+        .split('\n')
+        .map(l => l.trim())
+        .filter(Boolean)
+        .map(fila => {
+            const partes = fila.split(/\t|,/).map(x => x.trim());
+            return {
+                comuna: String(partes[0]),
+                mes: partes[1],
+                cud_mental: Number(partes[2]) || 0,
+                total_cud: Number(partes[3]) || 0
+            };
+        });
+}
+
+const resumenMensual = parsearDatos(datosTexto);
+
+function valorMes(comuna, mes) {
+    const row = resumenMensual.find(d => d.comuna === String(comuna) && d.mes === mes);
+    return row ? row.cud_mental : 0;
+}
+
+function porcentajeMes(comuna, mes) {
+    const row = resumenMensual.find(d => d.comuna === String(comuna) && d.mes === mes);
+    if (!row || !row.total_cud) return 0;
+    return (row.cud_mental / row.total_cud) * 100;
+}
+
+const map = L.map('map', { zoomControl: false }).setView([-34.61, -58.45], 11);
+L.control.zoom({ position: 'topleft' }).addTo(map);
+
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; OpenStreetMap contributors'
+}).addTo(map);
+
+let mesActivo = 'Marzo';
+let geojsonLayer;
+let labelLayerGroup = L.layerGroup().addTo(map);
+
+function getColor(v) {
+    if (v > 4200) return '#0B3C8C';
+    if (v > 3900) return '#486269';
+    if (v > 3600) return '#C2AF23';
+    return '#FFD500';
+}
+
+function obtenerComuna(feature) {
+    return String(feature.properties['comuna'] ?? feature.properties['COMUNA'] ?? '');
+}
+
+function estilo(feature) {
+    const comuna = obtenerComuna(feature);
+    const valor = valorMes(comuna, mesActivo);
+
+    return {
+        color: '#333',
+        weight: 1,
+        fillColor: getColor(valor),
+        fillOpacity: 0.6
+    };
+}
+
+function popupContent(feature) {
+    const comuna = obtenerComuna(feature);
+    const valor = valorMes(comuna, mesActivo);
+    const pct = porcentajeMes(comuna, mesActivo);
+
+    return `
+        <div style="min-width:190px;">
+            <div style="font-size:16px;font-weight:700;color:#0B3C8C;">Comuna ${comuna}</div>
+            <div style="margin-top:6px;font-size:14px;">CUD mental: <b>${Number(valor).toLocaleString('es-AR')}</b></div>
+            <div style="margin-top:4px;font-size:13px;">% sobre total CUD: <b>${pct.toFixed(1)}%</b></div>
+            <div style="margin-top:4px;font-size:12px;color:#666;">Mes: ${mesActivo}</div>
+        </div>
+    `;
+}
+
+function onEachFeature(feature, layer) {
+    layer.bindPopup(popupContent(feature));
+}
+
+function reconstruirLabels() {
+    labelLayerGroup.clearLayers();
+
+    geojsonLayer.eachLayer(layer => {
+        const comuna = obtenerComuna(layer.feature);
+        const centro = layer.getBounds().getCenter();
+
+        L.marker(centro, {
+            icon: L.divIcon({
+                className: 'label-comuna',
+                html: `
+                    <div style="
+                        font-size:11px;
+                        font-weight:bold;
+                        color:#0B3C8C;
+                        background:rgba(255,255,255,0.85);
+                        padding:2px 4px;
+                        border-radius:4px;
+                        box-shadow:0 1px 4px rgba(0,0,0,0.15);
+                    ">
+                        C${comuna}
+                    </div>
+                `,
+                iconSize: [34, 18]
+            }),
+            interactive: false
+        }).addTo(labelLayerGroup);
+    });
+}
+
+function actualizarKPIs() {
+    const mesDatos = resumenMensual.filter(d => d.mes === mesActivo);
+    const total = mesDatos.reduce((acc, d) => acc + d.cud_mental, 0);
+
+    let maxRow = null;
+    let minRow = null;
+
+    for (const row of mesDatos) {
+        if (!maxRow || row.cud_mental > maxRow.cud_mental) maxRow = row;
+        if (!minRow || row.cud_mental < minRow.cud_mental) minRow = row;
+    }
+
+    document.getElementById('kpiTotal').textContent = total.toLocaleString('es-AR');
+    document.getElementById('kpiMax').textContent = maxRow ? `Comuna ${maxRow.comuna}` : '-';
+    document.getElementById('kpiMin').textContent = minRow ? `Comuna ${minRow.comuna}` : '-';
+}
+
+function actualizarTabla() {
+    const tbody = document.querySelector('#tablaComparativa tbody');
+    tbody.innerHTML = '';
+
+    for (let c = 1; c <= 15; c++) {
+        const pct = porcentajeMes(c, mesActivo);
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>Comuna ${c}</td>
+            <td>${valorMes(c, 'Enero').toLocaleString('es-AR')}</td>
+            <td>${valorMes(c, 'Febrero').toLocaleString('es-AR')}</td>
+            <td>${valorMes(c, 'Marzo').toLocaleString('es-AR')}</td>
+            <td>${pct.toFixed(1)}%</td>
+        `;
+        tbody.appendChild(tr);
+    }
+}
+
+function refrescarMapa() {
+    geojsonLayer.eachLayer(layer => {
+        layer.setStyle(estilo(layer.feature));
+        layer.setPopupContent(popupContent(layer.feature));
+    });
+
+    reconstruirLabels();
+    actualizarKPIs();
+    actualizarTabla();
+}
+
+geojsonLayer = L.geoJson(json_mapa_cud_mentalcomunas_1, {
+    style: estilo,
+    onEachFeature: onEachFeature
+}).addTo(map);
+
+map.fitBounds(geojsonLayer.getBounds());
+
+document.getElementById('selectorMes').addEventListener('change', function() {
+    mesActivo = this.value;
+    refrescarMapa();
+});
+
+reconstruirLabels();
+actualizarKPIs();
+actualizarTabla();
+</script>
+</body>
+</html>
