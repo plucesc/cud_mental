@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="stylesheet" href="css/leaflet.css">
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 
 <style>
 html, body, #map {
@@ -109,7 +110,6 @@ html, body, #map {
     box-shadow: 0 3px 14px rgba(0,0,0,0.25);
     padding: 10px;
     box-sizing: border-box;
-    overflow: hidden;
 }
 
 #graficoPanel h4 {
@@ -118,35 +118,9 @@ html, body, #map {
     font-size: 15px;
 }
 
-#graficoWrapper {
-    position: relative;
+#graficoEdad {
     width: 100%;
     height: calc(100% - 28px);
-    border-radius: 6px;
-    overflow: hidden;
-    background: #fff;
-}
-
-#graficoFrame {
-    width: 100%;
-    height: 100%;
-    border: none;
-    border-radius: 6px;
-    background: #fff;
-    display: block;
-}
-
-#graficoFallback {
-    position: absolute;
-    inset: 0;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    padding: 20px;
-    font-size: 13px;
-    color: #666;
-    background: #fff;
 }
 
 .leaflet-popup-content {
@@ -234,18 +208,7 @@ html, body, #map {
 
 <div id="graficoPanel">
     <h4>Edad de inicio de la discapacidad mental</h4>
-    <div id="graficoWrapper">
-        <iframe
-            id="graficoFrame"
-            src="./edad_inicio_discapacidad.html?v=2"
-            title="Gráfico edad de inicio"
-            loading="lazy">
-        </iframe>
-        <div id="graficoFallback">
-            No se pudo cargar el gráfico.<br>
-            Revisa que el archivo <b>edad_inicio_discapacidad.html</b> esté en la misma carpeta que el <b>index.html</b>.
-        </div>
-    </div>
+    <div id="graficoEdad"></div>
 </div>
 
 <script src="js/leaflet.js"></script>
@@ -298,6 +261,16 @@ const datosTexto = `
 14	Marzo	3964	9307
 15	Marzo	3785	8513
 `.trim();
+
+const datosEdadInicio = [
+    { grupo: "Primera infancia", edad: "0–5", Enero: 36503, Febrero: 2582, Marzo: 39598 },
+    { grupo: "Infancia", edad: "6–11", Enero: 1561, Febrero: 12620, Marzo: 1536 },
+    { grupo: "Adolescencia", edad: "12–17", Enero: 3247, Febrero: 8939, Marzo: 3286 },
+    { grupo: "Adultez temprana", edad: "18–30", Enero: 6178, Febrero: 8905, Marzo: 5973 },
+    { grupo: "Adultez", edad: "31–45", Enero: 5041, Febrero: 7848, Marzo: 4433 },
+    { grupo: "Adultez media", edad: "46–64", Enero: 5663, Febrero: 11417, Marzo: 4531 },
+    { grupo: "Adulto mayor", edad: "65+", Enero: 8001, Febrero: 17992, Marzo: 10339 }
+];
 
 function parsearDatos(texto) {
     return texto
@@ -448,6 +421,73 @@ function actualizarTabla() {
     }
 }
 
+function actualizarGrafico() {
+    const edades = datosEdadInicio.map(d => d.edad);
+    const grupos = datosEdadInicio.map(d => d.grupo);
+    const valores = datosEdadInicio.map(d => d[mesActivo]);
+
+    const trace = {
+        x: edades,
+        y: valores,
+        type: "scatter",
+        mode: "lines+markers",
+        line: {
+            color: "#4F81BD",
+            width: 2
+        },
+        marker: {
+            size: 10,
+            color: "#5B9BD5",
+            line: {
+                color: "#1F4E79",
+                width: 1
+            }
+        },
+        customdata: grupos,
+        hovertemplate:
+            "<b>%{customdata}</b><br>" +
+            "Edad inicio: %{x}<br>" +
+            "Cantidad: %{y:,}<extra></extra>"
+    };
+
+    const layout = {
+        title: {
+            text: `Edad de inicio de la discapacidad mental - ${mesActivo}`,
+            font: {
+                size: 16,
+                color: "#1F4E79"
+            }
+        },
+        margin: {
+            l: 55,
+            r: 25,
+            t: 50,
+            b: 65
+        },
+        paper_bgcolor: "#ffffff",
+        plot_bgcolor: "#ffffff",
+        xaxis: {
+            title: "Edad inicio",
+            showgrid: true,
+            gridcolor: "#e5e5e5"
+        },
+        yaxis: {
+            title: "Cantidad",
+            showgrid: true,
+            gridcolor: "#e5e5e5",
+            rangemode: "tozero"
+        },
+        showlegend: false
+    };
+
+    const config = {
+        responsive: true,
+        displayModeBar: false
+    };
+
+    Plotly.react('graficoEdad', [trace], layout, config);
+}
+
 function refrescarMapa() {
     geojsonLayer.eachLayer(layer => {
         layer.setStyle(estilo(layer.feature));
@@ -457,24 +497,7 @@ function refrescarMapa() {
     reconstruirLabels();
     actualizarKPIs();
     actualizarTabla();
-}
-
-function inicializarIframeGrafico() {
-    const frame = document.getElementById('graficoFrame');
-    const fallback = document.getElementById('graficoFallback');
-
-    let cargado = false;
-
-    frame.addEventListener('load', () => {
-        cargado = true;
-        fallback.style.display = 'none';
-    });
-
-    setTimeout(() => {
-        if (!cargado) {
-            fallback.style.display = 'flex';
-        }
-    }, 2500);
+    actualizarGrafico();
 }
 
 geojsonLayer = L.geoJson(json_mapa_cud_mentalcomunas_1, {
@@ -492,7 +515,11 @@ document.getElementById('selectorMes').addEventListener('change', function() {
 reconstruirLabels();
 actualizarKPIs();
 actualizarTabla();
-inicializarIframeGrafico();
+actualizarGrafico();
+
+window.addEventListener('resize', function () {
+    Plotly.Plots.resize('graficoEdad');
+});
 </script>
 </body>
 </html>
