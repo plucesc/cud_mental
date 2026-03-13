@@ -109,6 +109,7 @@ html, body, #map {
     box-shadow: 0 3px 14px rgba(0,0,0,0.25);
     padding: 10px;
     box-sizing: border-box;
+    overflow: hidden;
 }
 
 #graficoPanel h4 {
@@ -117,11 +118,34 @@ html, body, #map {
     font-size: 15px;
 }
 
-#graficoFrame {
+#graficoWrapper {
+    position: relative;
     width: 100%;
     height: calc(100% - 28px);
+    border-radius: 6px;
+    overflow: hidden;
+    background: #fff;
+}
+
+#graficoFrame {
+    width: 100%;
+    height: 100%;
     border: none;
     border-radius: 6px;
+    background: #fff;
+    display: block;
+}
+
+#graficoFallback {
+    position: absolute;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 20px;
+    font-size: 13px;
+    color: #666;
     background: #fff;
 }
 
@@ -210,7 +234,18 @@ html, body, #map {
 
 <div id="graficoPanel">
     <h4>Edad de inicio de la discapacidad mental</h4>
-    <iframe id="graficoFrame" src="edad_inicio_discapacidad.html" title="Gráfico edad de inicio"></iframe>
+    <div id="graficoWrapper">
+        <iframe
+            id="graficoFrame"
+            src="./edad_inicio_discapacidad.html?v=2"
+            title="Gráfico edad de inicio"
+            loading="lazy">
+        </iframe>
+        <div id="graficoFallback">
+            No se pudo cargar el gráfico.<br>
+            Revisa que el archivo <b>edad_inicio_discapacidad.html</b> esté en la misma carpeta que el <b>index.html</b>.
+        </div>
+    </div>
 </div>
 
 <script src="js/leaflet.js"></script>
@@ -424,6 +459,24 @@ function refrescarMapa() {
     actualizarTabla();
 }
 
+function inicializarIframeGrafico() {
+    const frame = document.getElementById('graficoFrame');
+    const fallback = document.getElementById('graficoFallback');
+
+    let cargado = false;
+
+    frame.addEventListener('load', () => {
+        cargado = true;
+        fallback.style.display = 'none';
+    });
+
+    setTimeout(() => {
+        if (!cargado) {
+            fallback.style.display = 'flex';
+        }
+    }, 2500);
+}
+
 geojsonLayer = L.geoJson(json_mapa_cud_mentalcomunas_1, {
     style: estilo,
     onEachFeature: onEachFeature
@@ -439,6 +492,7 @@ document.getElementById('selectorMes').addEventListener('change', function() {
 reconstruirLabels();
 actualizarKPIs();
 actualizarTabla();
+inicializarIframeGrafico();
 </script>
 </body>
 </html>
