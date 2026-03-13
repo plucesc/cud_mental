@@ -39,7 +39,6 @@ html, body, #map {
     border: 1px solid #ccc;
     border-radius: 6px;
     margin-bottom: 12px;
-    background: white;
 }
 
 .kpi {
@@ -66,8 +65,6 @@ html, body, #map {
     top: 20px;
     z-index: 1000;
     width: 520px;
-    max-height: 44vh;
-    overflow-y: auto;
     background: white;
     border-radius: 10px;
     box-shadow: 0 3px 14px rgba(0,0,0,0.25);
@@ -78,10 +75,6 @@ html, body, #map {
     margin: 0 0 8px 0;
     color: #0B3C8C;
     font-size: 15px;
-    position: sticky;
-    top: 0;
-    background: white;
-    padding-bottom: 6px;
 }
 
 #tablaComparativa {
@@ -103,9 +96,6 @@ html, body, #map {
 
 #tablaComparativa th {
     background: #f1f1f1;
-    position: sticky;
-    top: 28px;
-    z-index: 1;
 }
 
 #graficoPanel {
@@ -159,7 +149,6 @@ html, body, #map {
         left: 20px;
         top: auto;
         bottom: 360px;
-        max-height: 28vh;
     }
 
     #graficoPanel {
@@ -381,7 +370,7 @@ function reconstruirLabels() {
                         font-size:11px;
                         font-weight:bold;
                         color:#0B3C8C;
-                        background:rgba(255,255,255,0.88);
+                        background:rgba(255,255,255,0.85);
                         padding:2px 4px;
                         border-radius:4px;
                         box-shadow:0 1px 4px rgba(0,0,0,0.15);
@@ -433,87 +422,119 @@ function actualizarTabla() {
 }
 
 function actualizarGrafico() {
+
     const edades = datosEdadInicio.map(d => d.edad);
     const grupos = datosEdadInicio.map(d => d.grupo);
     const valores = datosEdadInicio.map(d => d[mesActivo]);
 
     const trace = {
+
         x: edades,
         y: valores,
+
         type: "scatter",
         mode: "lines+markers+text",
+
         text: valores.map(v => v.toLocaleString('es-AR')),
         textposition: "top center",
-        textfont: {
-            size: 10,
-            color: "#333333"
+
+        textfont:{
+            size:10,
+            color:"#444"
         },
-        line: {
-            color: "#4F81BD",
-            width: 3,
-            shape: "spline",
-            smoothing: 0.2
+
+        line:{
+            color:"#4F81BD",
+            width:2,
+            shape:"spline",
+            smoothing:0.5
         },
-        marker: {
-            size: 10,
-            color: "#5B9BD5",
-            line: {
-                color: "#1F4E79",
-                width: 1.5
+
+        marker:{
+            size:7,
+            color:"#5B9BD5",
+            line:{
+                color:"#1F4E79",
+                width:1
             }
         },
+
         customdata: grupos,
+
         hovertemplate:
-            "<b>%{customdata}</b><br>" +
-            "Edad inicio: %{x}<br>" +
-            "Cantidad: %{y:,}<extra></extra>",
-        hoverlabel: {
-            bgcolor: "#ffffff",
-            bordercolor: "#0B3C8C",
-            font: {
-                color: "#333333",
-                size: 12
+        "<div style='text-align:center'>" +
+        "<b>%{customdata}</b><br>" +
+        "Edad: %{x}<br>" +
+        "Cantidad: %{y:,}" +
+        "</div><extra></extra>",
+
+        hoverlabel:{
+            bgcolor:"#ffffff",
+            bordercolor:"#d9d9d9",
+            align:"center",
+            font:{
+                size:12,
+                color:"#333"
             }
         }
+
     };
 
+    const maxValor = Math.max(...valores);
+
     const layout = {
-        title: {
-            text: `Edad de inicio de la discapacidad mental - ${mesActivo}`,
-            font: {
-                size: 16,
-                color: "#1F4E79"
-            }
+
+        hovermode:"closest",
+
+        margin:{
+            l:50,
+            r:20,
+            t:20,
+            b:50
         },
-        hovermode: "closest",
-        margin: {
-            l: 55,
-            r: 20,
-            t: 55,
-            b: 65
+
+        paper_bgcolor:"#ffffff",
+        plot_bgcolor:"#ffffff",
+
+        xaxis:{
+            title:"Edad de inicio",
+            titlefont:{
+                size:11,
+                color:"#444"
+            },
+            tickfont:{
+                size:10
+            },
+            showgrid:true,
+            gridcolor:"#f0f0f0"
         },
-        paper_bgcolor: "#ffffff",
-        plot_bgcolor: "#ffffff",
-        xaxis: {
-            title: "Edad inicio",
-            showgrid: true,
-            gridcolor: "#e5e5e5"
+
+        yaxis:{
+            title:"Cantidad",
+            titlefont:{
+                size:11,
+                color:"#444"
+            },
+            tickfont:{
+                size:10
+            },
+            showgrid:true,
+            gridcolor:"#f0f0f0",
+
+            range:[0, maxValor * 1.18]
         },
-        yaxis: {
-            title: "Cantidad",
-            showgrid: true,
-            gridcolor: "#e5e5e5",
-            rangemode: "tozero"
-        },
-        showlegend: false
+
+        showlegend:false
+
     };
 
     const config = {
-        responsive: true,
-        displayModeBar: false
+        responsive:true,
+        displayModeBar:false
     };
 
     Plotly.react('graficoEdad', [trace], layout, config);
+
 }
 
 function refrescarMapa() {
@@ -546,10 +567,7 @@ actualizarTabla();
 actualizarGrafico();
 
 window.addEventListener('resize', function () {
-    const chartDiv = document.getElementById('graficoEdad');
-    if (chartDiv) {
-        Plotly.Plots.resize(chartDiv);
-    }
+    Plotly.Plots.resize('graficoEdad');
 });
 </script>
 </body>
